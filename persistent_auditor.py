@@ -1,5 +1,5 @@
 import os
-
+import ast
 
 #Global Constants
 MAX_CAPACITY = 500
@@ -42,8 +42,14 @@ item3=[
 # ==============================
 def load_inventory(new_items):
     if os.path.exists("inventory.txt"):
-        inventory_from_file = open("inventory.txt", "r").read() # contents being stored as a string from file
-        parsed_inventory_list = eval(f"[{inventory_from_file}]") # to convert the string into a list 
+        parsed_inventory_list = []
+
+        # Read line-by-line to avoid the syntax/indexing error
+        with open(INVENTORY_FILE, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    parsed_inventory_list.append(ast.literal_eval(line))
 
         item_list = []
         transcations_history = []
@@ -64,7 +70,7 @@ def load_inventory(new_items):
 
         print("Current Orders:\n" + output_orders)
 
-        return inventory_from_file, transcations_history
+        return parsed_inventory_list, transcations_history
     else:
 
         with open("inventory.txt", "w") as f:
@@ -81,8 +87,11 @@ def load_inventory(new_items):
     
 
 
-def save_inventory(inventory, transactions_history):
-    return 0;
+def save_inventory(item_list):
+    with open(INVENTORY_FILE, "w") as f:
+
+        for item in item_list:
+            f.write(str(item) + "\n")
 
 
 def get_valid_input():
@@ -94,6 +103,7 @@ def get_valid_input():
         )
 
         if product_name_input.lower() == "quit":
+
             return "quit", 0, failed_attempts
 
         quantity_input = input("Enter Quantity: ")
@@ -135,7 +145,9 @@ def main():
     failed_attempts = 0
     item_list = [item1, item2, item3]
 
-    load_inventory(item_list)
+    current_inventory  = load_inventory(item_list)
+
+    item_list = current_inventory[0]
 
     while True:
         product_name_input, new_value, rejected = get_valid_input()
@@ -143,6 +155,11 @@ def main():
         failed_attempts += rejected
 
         if product_name_input == "quit":
+            save_inventory(item_list)
+
+            for item in item_list:
+                inventory+=item[ITEM_FIELDS["quantity"]]
+                
             generate_report(inventory, failed_attempts)
             break
 
@@ -162,11 +179,13 @@ def main():
             [new_value]
         ]
 
+        # Add item to inventory
         item_list.append(new_item)
 
         print(f"Added item: {new_id} - {product_name_input} - Quantity: {new_value}\n")
         print(item_list)
 
+        # Update total inventory
         inventory = process_delivery(inventory, new_value)
 
         tax_amount = calculate_tax(new_value)
