@@ -72,7 +72,9 @@ def load_inventory(new_items):
             f.write(new_item_string)
 
 
-            print("No inventory file found. A new file has been created.")
+        print("No inventory file found. A new file has been created.")
+
+        return new_items
         
         
 
@@ -87,19 +89,24 @@ def get_valid_input():
     failed_attempts = 0
 
     while True:
-        user_input = input(
-            "Enter stock quantity (or type 'quit' to exit): "
+        product_name_input = input(
+            "Enter Product Name (or type 'quit' to exit): "
         )
 
-        if user_input.lower() == "quit":
-            return "quit", failed_attempts
+        if product_name_input.lower() == "quit":
+            return "quit", 0, failed_attempts
 
-        if not user_input.isdigit() or int(user_input) < 0:
+        quantity_input = input("Enter Quantity: ")
+
+        if quantity_input.lower() == "quit":
+            return "quit", 0, failed_attempts
+
+        if not quantity_input.isdigit() or int(quantity_input) < 0:
             print("Error! Please enter a valid integer.")
             failed_attempts += 1
         else:
-            return int(user_input), failed_attempts
-
+            return product_name_input, int(quantity_input), failed_attempts
+        
 
 def process_delivery(current_total, new_value):
     new_total = current_total + new_value
@@ -131,13 +138,34 @@ def main():
     load_inventory(item_list)
 
     while True:
-        new_value, rejected = get_valid_input()
+        product_name_input, new_value, rejected = get_valid_input()
 
         failed_attempts += rejected
 
-        if new_value == "quit":
+        if product_name_input == "quit":
             generate_report(inventory, failed_attempts)
             break
+
+        # Generate the next product ID
+        if len(item_list) == 0:
+            new_id = "1001"
+        else:
+            last_id = int(item_list[-1][ITEM_FIELDS["id"]])
+            new_id = str(last_id + 1)
+
+
+        # Create new item
+        new_item = [
+            new_id,
+            product_name_input,
+            new_value,
+            [new_value]
+        ]
+
+        item_list.append(new_item)
+
+        print(f"Added item: {new_id} - {product_name_input} - Quantity: {new_value}\n")
+        print(item_list)
 
         inventory = process_delivery(inventory, new_value)
 
